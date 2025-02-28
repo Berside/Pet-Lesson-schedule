@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './calendar.css';
 
-const Calendar = ({ onDateSelect }) => {
+const Calendar = ({ onDateSelect, selectedDate }) => {
     const formatDate = (date) => {
         const day = date.getDate().toString().padStart(2, '0');
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -9,8 +9,8 @@ const Calendar = ({ onDateSelect }) => {
         return `${day}.${month}.${year}`;
     };
 
-    const [selectedDate, setSelectedDate] = useState(new Date());
     const [showCalendar, setShowCalendar] = useState(false);
+    const calendarRef = useRef(null);
 
     const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
     const months = [
@@ -22,7 +22,7 @@ const Calendar = ({ onDateSelect }) => {
     const month = selectedDate.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const startDay = firstDay.getDay() || 7;
+    const startDay = (firstDay.getDay() + 7) % 7;
     const totalDays = lastDay.getDate();
 
     const isToday = (day) => {
@@ -36,33 +36,45 @@ const Calendar = ({ onDateSelect }) => {
 
     const handleDateClick = (day) => {
         const newDate = new Date(year, month, day);
-        setSelectedDate(newDate);
-        setShowCalendar(false);
         onDateSelect(newDate);
+        setShowCalendar(false);
     };
 
     const handleMonthChange = (newMonth) => {
         const newDate = new Date(year, newMonth, selectedDate.getDate());
-        setSelectedDate(newDate);
+        onDateSelect(newDate);
     };
 
     const handleYearChange = (newYear) => {
         const newDate = new Date(newYear, month, selectedDate.getDate());
-        setSelectedDate(newDate);
+        onDateSelect(newDate);
     };
 
     const handlePrevMonth = () => {
         const newDate = new Date(year, month - 1, 1);
-        setSelectedDate(newDate);
+        onDateSelect(newDate);
     };
 
     const handleNextMonth = () => {
         const newDate = new Date(year, month + 1, 1);
-        setSelectedDate(newDate);
+        onDateSelect(newDate);
     };
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+                setShowCalendar(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     return (
-        <div className="calendar-container">
+        <div className="calendar-container" ref={calendarRef}>
             <button onClick={() => setShowCalendar(!showCalendar)} className="calendar-button">
                 {formatDate(selectedDate)}
             </button>
@@ -86,7 +98,7 @@ const Calendar = ({ onDateSelect }) => {
                         ))}
                     </div>
                     <div className="calendar-days">
-                        {Array(startDay - 1).fill(null).map((_, i) => (
+                        {Array(startDay).fill(null).map((_, i) => (
                             <div key={`empty-${i}`} className="day empty" />
                         ))}
                         {Array(totalDays).fill(null).map((_, i) => {

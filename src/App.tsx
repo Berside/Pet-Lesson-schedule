@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './app.css';
 import humanIcon from './assets/human.png';
 import pointIcon from './assets/point.png';
@@ -52,10 +52,9 @@ const isCurrentClass = (entry, currentDate) => {
 
 const isPastClass = (entry) => {
     const now = new Date();
-    const today = formatDate(now);
-    if (today !== entry.date) return false;
-    const currentTime = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    return currentTime > entry.time_end;
+    const entryDate = new Date(entry.date.split('.').reverse().join('-')); 
+    const entryDateTime = new Date(`${entryDate.toISOString().split('T')[0]}T${entry.time_end}`);
+    return now > entryDateTime;
 };
 
 function App() {
@@ -75,6 +74,13 @@ function App() {
     const groupedSchedule = groupByDay(scheduleData);
     const daysToShow = getNextSixDays(offset);
 
+
+    useEffect(() => {
+        const newDate = new Date();
+        newDate.setDate(newDate.getDate() + offset);
+        setSelectedDate(newDate);
+    }, [offset]);
+
     const handleDateSelect = (date) => {
         const diffTime = date - new Date();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -89,7 +95,7 @@ function App() {
                 <button onClick={() => setOffset(prev => prev - 6)} className="nav-button">
                     <img src={leftArrow} alt="Предыдущие дни" className="nav-icon" />
                 </button>
-                <Calendar onDateSelect={handleDateSelect} />
+                <Calendar onDateSelect={handleDateSelect} selectedDate={selectedDate} />
                 <button onClick={() => setOffset(prev => prev + 6)} className="nav-button">
                     <img src={RightArrow} alt="Следующие дни" className="nav-icon" />
                 </button>
@@ -119,16 +125,16 @@ function App() {
                                         <span>{entry.time_start} - {entry.time_end}</span>
                                     </div>
                                     <div className="info-row">
+                                        <img src={tipIcon} alt="Тип занятия" className="icon" />
+                                        <span>{entry.type}</span>
+                                    </div>
+                                    <div className="info-row">
                                         <img src={humanIcon} alt="Преподаватель" className="icon" />
                                         <span>{entry.professor || 'Не указан'}</span>
                                     </div>
                                     <div className="info-row">
                                         <img src={pointIcon} alt="Место" className="icon" />
-                                        <span>{entry.room || 'Не указано'}</span>
-                                    </div>
-                                    <div className="info-row">
-                                        <img src={tipIcon} alt="Тип занятия" className="icon" />
-                                        <span>{entry.type}</span>
+                                        <span>{entry.room || 'Дистанционно'}</span>
                                     </div>
                                     {entry.type === 'лабораторные занятия' && (
                                         <div className="info-row">
@@ -144,5 +150,4 @@ function App() {
         </div>
     );
 }
-
 export default App;
